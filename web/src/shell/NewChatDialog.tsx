@@ -159,6 +159,7 @@ import { CliCommandBlock, renderTextWithInlineCode } from "./CliCommandBlock";
 import { isHostAbsolutePath, isNavigablePath } from "./WorkspacePicker";
 import { WorkspacePickerDialog } from "./WorkspacePickerDialog";
 import { StaticSandboxPicker } from "./StaticSandboxPicker";
+import { StaticSandboxName } from "./StaticSandboxName";
 import { RecentWorkspaceList } from "./RecentWorkspaceList";
 import {
   WORKTREE_RADIO_SELECTOR_INPUT_CLASS,
@@ -427,10 +428,11 @@ function createdHarnessOptions({
 
 /** Use a local-friendly label only when the desktop shell proves the host id is this machine. */
 export function displayNameForHost(
-  host: Pick<Host, "host_id" | "name">,
+  host: Pick<Host, "host_id" | "name" | "display_name">,
   thisMachineHostId: string | null,
   userAgent: string,
 ): string {
+  if (host.display_name) return host.display_name;
   if (thisMachineHostId === null || host.host_id !== thisMachineHostId) return host.name;
   return localMachineLabel(userAgent, host.name);
 }
@@ -1520,7 +1522,7 @@ export function AgentHarnessPicker({
   const selectedWarningMessage = selectedUnavailable
     ? harnessWarningMessage(
         selectedEntry.display_name,
-        host?.name,
+        host?.display_name ?? host?.name,
         selectedReadiness.reason,
         selectedEntry.harness,
       )
@@ -1654,7 +1656,7 @@ export function AgentHarnessPicker({
     const warning = harnessWarningBadgeText(readiness.reason, collapsedBadge);
     const warningMessage = harnessWarningMessage(
       agent.display_name,
-      host?.name,
+      host?.display_name ?? host?.name,
       readiness.reason,
       agent.harness,
     );
@@ -6084,7 +6086,7 @@ export function NewChatLandingScreen() {
             : `new-chat-landing-host-${host.host_id}`
         }
         data-active={!sandboxSelected && host.host_id === selectedHostId ? "true" : undefined}
-        title={`${host.name} — ${host.status}`}
+        title={`${host.display_name ?? host.name} — ${host.status}`}
         className={reconnect ? "group" : undefined}
       >
         <HostOption
@@ -7112,6 +7114,10 @@ export function NewChatLandingScreen() {
                       </DropdownMenuContent>
                     </DropdownMenu>
 
+                    {!sandboxSelected && selectedHost?.sandbox_attached && (
+                      <StaticSandboxName host={selectedHost} />
+                    )}
+
                     {noExecutionTargetSelected ? (
                       <ComposerPermissionPicker
                         label="Permission mode"
@@ -7307,7 +7313,7 @@ export function NewChatLandingScreen() {
           {selectedAgentUnconfigured && (
             <HarnessSetupNotice
               agentName={selectedAgent?.display_name}
-              hostName={harnessWarningHost?.name}
+              hostName={harnessWarningHost?.display_name ?? harnessWarningHost?.name}
               harness={selectedAgent?.harness ?? null}
               reason={harnessUnavailableReasonOnHost(selectedAgent?.harness, harnessWarningHost)}
               featureEnabled={harnessInstallEnabled}
@@ -7334,7 +7340,7 @@ export function NewChatLandingScreen() {
               <TriangleAlertIcon className="size-3.5 shrink-0" />
               <span>
                 {smartRoutingDroppedMessage(smartRoutingDropped, {
-                  hostName: harnessWarningHost?.name,
+                  hostName: harnessWarningHost?.display_name ?? harnessWarningHost?.name,
                   fallbackAgentName: selectedAgent?.display_name,
                 })}
               </span>
